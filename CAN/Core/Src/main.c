@@ -82,19 +82,11 @@ int datacheck2 = 0;
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1)
 {
 	HAL_CAN_GetRxMessage(hcan1, CAN_RX_FIFO0, &CAN1_RxHeader, CAN1_Rx_data);
-//	if(CAN1_RxHeader.DLC == 2)
-//	{
-//		datacheck1 = 1;
-//	}
 }
 
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan2)
 {
 	HAL_CAN_GetRxMessage(hcan2, CAN_RX_FIFO0, &CAN2_RxHeader, CAN2_Rx_data);
-//	if(CAN2_RxHeader.DLC == 2)
-//	{
-//		datacheck2 = 1;
-//	}
 }
 /* USER CODE END 0 */
 
