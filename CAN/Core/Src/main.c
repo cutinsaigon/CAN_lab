@@ -52,13 +52,50 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_CAN2_Init(void);
+static void CAN1_filterconfig();
+static void CAN2_filterconfig();
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+CAN_TxHeaderTypeDef CAN1_TxHeader;
+CAN_RxHeaderTypeDef CAN1_RxHeader;
+CAN_TxHeaderTypeDef CAN2_TxHeader;
+CAN_RxHeaderTypeDef CAN2_RxHeader;
 
+
+uint8_t CAN1_Tx_data[8];
+uint8_t CAN1_Rx_data[8];
+uint8_t CAN2_Tx_data[8];
+uint8_t CAN2_Rx_data[8];
+
+uint32_t CAN1_TxMailBox;
+uint32_t CAN2_TxMailBox;
+
+int datacheck1 = 0;
+int datacheck2 = 0;
+
+
+
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1)
+{
+	HAL_CAN_GetRxMessage(hcan1, CAN_RX_FIFO0, &CAN1_RxHeader, CAN1_Rx_data);
+	if(CAN1_RxHeader.DLC == 2)
+	{
+		datacheck1 = 1;
+	}
+}
+
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan2)
+{
+	HAL_CAN_GetRxMessage(hcan2, CAN_RX_FIFO0, &CAN2_RxHeader, CAN2_Rx_data);
+	if(CAN2_RxHeader.DLC == 2)
+	{
+		datacheck2 = 1;
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -94,6 +131,29 @@ int main(void)
   MX_CAN2_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_CAN_Start(&hcan1);
+  HAL_CAN_Start(&hcan2);
+
+  //Activate notification
+
+  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+  HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
+
+
+  //config ID
+  CAN1_TxHeader.DLC = 2;
+  CAN1_TxHeader.IDE = CAN_ID_STD;
+  CAN1_TxHeader.RTR = CAN_RTR_DATA;
+  CAN1_TxHeader.StdId = 0x00;
+
+  CAN2_TxHeader.DLC = 2;
+  CAN2_TxHeader.IDE = CAN_ID_STD;
+  CAN2_TxHeader.RTR = CAN_RTR_DATA;
+  CAN2_TxHeader.StdId = 0x00;
+
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -105,6 +165,42 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+//called in MX_CAN_INIT
+void CAN1_filterconfig()
+{
+	  CAN_FilterTypeDef canfilterconfig1;
+
+	  canfilterconfig1.FilterActivation = CAN_FILTER_ENABLE;
+	  canfilterconfig1.FilterBank = 18;  // which filter bank to use from the assigned ones
+	  canfilterconfig1.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	  canfilterconfig1.FilterIdHigh = 0x103<<5;
+	  canfilterconfig1.FilterIdLow = 0;
+	  canfilterconfig1.FilterMaskIdHigh = 0x103<<5;
+	  canfilterconfig1.FilterMaskIdLow = 0x0000;
+	  canfilterconfig1.FilterMode = CAN_FILTERMODE_IDMASK;
+	  canfilterconfig1.FilterScale = CAN_FILTERSCALE_32BIT;
+	  canfilterconfig1.SlaveStartFilterBank = 20;  // how many filters to assign to the CAN1 (master can)
+
+	  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig1);
+}
+
+void CAN2_filterconfig()
+{
+	  CAN_FilterTypeDef canfilterconfig2;
+
+	  canfilterconfig2.FilterActivation = CAN_FILTER_ENABLE;
+	  canfilterconfig2.FilterBank = 10;  // which filter bank to use from the assigned ones
+	  canfilterconfig2.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	  canfilterconfig2.FilterIdHigh = 0x446<<5;
+	  canfilterconfig2.FilterIdLow = 0;
+	  canfilterconfig2.FilterMaskIdHigh = 0x446<<5;
+	  canfilterconfig2.FilterMaskIdLow = 0x0000;
+	  canfilterconfig2.FilterMode = CAN_FILTERMODE_IDMASK;
+	  canfilterconfig2.FilterScale = CAN_FILTERSCALE_32BIT;
+	  canfilterconfig2.SlaveStartFilterBank = 0;
+
+	  HAL_CAN_ConfigFilter(&hcan2, &canfilterconfig2);
 }
 
 /**
@@ -184,7 +280,7 @@ static void MX_CAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN1_Init 2 */
-
+  CAN1_filterconfig();
   /* USER CODE END CAN1_Init 2 */
 
 }
@@ -221,7 +317,7 @@ static void MX_CAN2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN2_Init 2 */
-
+  CAN2_filterconfig;
   /* USER CODE END CAN2_Init 2 */
 
 }
